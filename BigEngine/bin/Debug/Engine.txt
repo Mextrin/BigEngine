@@ -1,0 +1,2 @@
+Error: Invalid window hint 204801
+Error: Missing GL version

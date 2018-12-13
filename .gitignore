@@ -1,0 +1,7 @@
+BigEngine/.vs/
+*.vcxproj.filters
+*.vcxproj.user
+BigEngine/bin/Debug/intermediates/
+BigEngine/bin/Debug/logs/*.*
+BigEngine/bin/Release/intermediates/
+BigEngine/bin/Release/logs/*.*
