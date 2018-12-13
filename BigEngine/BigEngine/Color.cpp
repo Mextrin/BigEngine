@@ -37,7 +37,7 @@ Big::Color::~Color()
 {
 }
 
-float Big::Color::operator[](int index)
+float& Big::Color::operator[](int index)
 {
 	assert(index >= 0 && index < 4);
 	return color[index];
