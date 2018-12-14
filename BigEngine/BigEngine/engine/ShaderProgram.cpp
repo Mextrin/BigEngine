@@ -55,27 +55,30 @@ bool Big::ShaderProgram::LoadShader(const std::string& uri, ShaderType shaderTyp
 		const GLchar* glSource = source.c_str();
 		glShaderSource(shaderHandle, 1, &glSource, nullptr);
 		glCompileShader(shaderHandle);
-		if (!CheckShaderError(handle))
+		success &= CheckShaderError(handle);
+		if (success)
 		{
 			glAttachShader(handle, shaderHandle);
 			glLinkProgram(handle);
+			success &= CheckProgramError();
 		}
 	}
 
+	glDeleteShader(shaderHandle);
 	return success;
 }
 
 bool Big::ShaderProgram::CheckShaderError(unsigned int shader)
 {
 	GLint status;
-	glGetShaderiv(handle, GL_LINK_STATUS, &status);
+	glGetShaderiv(shader, GL_LINK_STATUS, &status);
 
 	if (!status)
 	{
 		GLint messageLength = 0;
-		glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &messageLength);
+		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &messageLength);
 		std::string errorMessage(messageLength, ' ');
-		glGetShaderInfoLog(handle, messageLength, &messageLength, &errorMessage[0]);
+		glGetShaderInfoLog(shader, messageLength, &messageLength, &errorMessage[0]);
 		LogHandler::DoLog("Shader failed to compile: " + errorMessage, LogFile::LogType::Error);
 		return false;
 	}

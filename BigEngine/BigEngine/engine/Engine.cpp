@@ -4,6 +4,7 @@
 #include "../files/LogHandler.h"
 #include "GL/glew.h"
 #include <GLFW/glfw3.h>
+#include "ShaderProgram.h"
 
 Big::Engine::Engine()
 {
@@ -38,13 +39,36 @@ bool Big::Engine::Create()
 
 	assert(window == nullptr);
 	window = new Window();
-	return window->Create(windowSettings);
+	success &= window->Create(windowSettings);
+	if (!success)
+	{
+		LogHandler::DoLog("Failed to create window.", LogFile::LogType::Error);
+		return false;
+	}
+
+	shaderProgram = new ShaderProgram();
+	success &= shaderProgram->Create();
+	if (success)
+	{
+		success &= shaderProgram->LoadShader(defaultVertexShader, ShaderProgram::ShaderType::Vertex);
+		success &= shaderProgram->LoadShader(defaultFragmentShader, ShaderProgram::ShaderType::Fragment);
+	}
+
+	return success;
 }
 
 void Big::Engine::Destroy()
 {
+	if (shaderProgram)
+	{
+		shaderProgram->Destroy();
+		delete shaderProgram;
+		shaderProgram = nullptr;
+	}
+
 	if (window)
 	{
+		window->Destroy();
 		delete window;
 		window = nullptr;
 	}
@@ -82,78 +106,14 @@ void Big::Engine::Run()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, (GLvoid*)(sizeof(GLfloat) * 3));
 	glEnableVertexAttribArray(1);
 
-	const GLchar* vertexShaderSource = 
-		"#version 330 core\n" 
-		"layout (location = 0) in vec3 pos;" 
-		"layout (location = 1) in vec3 color;" 
-		"out vec3 vert_color;" 
-		"void main()" 
-		"{" 
-		"vert_color = color;" 
-		"gl_Position = vec4(pos.x, pos.y, pos.z, 1.0f);" 
-		"}";
-
-	const GLchar* fragmentShaderSource = 
-		"#version 330 core\n" 
-		"in vec3 vert_color;" 
-		"out vec4 frag_color;" 
-		"void main()" 
-		"{" 
-		"frag_color = vec4(vert_color, 1.0f);" 
-		"}";
-
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
-	glCompileShader(vertexShader);
-
-	GLint result;
-	GLchar info[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
-	if (!result)
-	{
-		// Todo: Log error
-		glGetShaderInfoLog(vertexShader, sizeof(info), nullptr, info);
-		LogHandler::DoLog(info, LogFile::LogType::Error);
-	}
-
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-	glCompileShader(fragmentShader);
-
-	result;
-	info[512];
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
-	if (!result)
-	{
-		// Todo: Log error
-		glGetShaderInfoLog(fragmentShader, sizeof(info), nullptr, info);
-		LogHandler::DoLog(info, LogFile::LogType::Error);
-	}
-
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &result);
-	if (!result)
-	{
-		glGetProgramInfoLog(shaderProgram, sizeof(info), nullptr, info);
-		LogHandler::DoLog(info, LogFile::LogType::Error);
-	}
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-
-
-
+	
 
 	while (!window->Closing())
 	{
 		window->BeginRender();
 
 		//Render stuff here
-		glUseProgram(shaderProgram);
+		shaderProgram->Use();
 		glBindVertexArray(vao);
 		
 		glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -166,7 +126,6 @@ void Big::Engine::Run()
 		glfwPollEvents();
 	}
 
-	glDeleteProgram(shaderProgram);
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
 }

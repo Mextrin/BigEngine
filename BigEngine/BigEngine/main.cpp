@@ -10,7 +10,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-
 	engine.Run();
 	engine.Destroy();
 
